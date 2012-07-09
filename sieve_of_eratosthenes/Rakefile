@@ -5,11 +5,12 @@
 #          but leaves implementation and linking up to the user.
 #
 # Notes: This script may require a little bit of configuration depending on the system.
-#     1: It is expected that you have working Fortran and C compilers as well as a Ruby
-#        interpreter added to your path. Checks for Intel or GNU compilers by default.
+#     1: The Ruby include flags are specifically for MY system. I haven't found a way to generate them,
+#        so you have to either tailor them by hand or generate a extconf.rb makefile, enable verbose mode,
+#        and copy the include flags from the compile command. Yeah, I know, I know...
 #     2: Recursive directory search is NOT supported. This script will only build files in
 #        the present working directory.
-#     3: Linking is left up to the user, although the syntax is printed out at the end of the build.
+#     3: Linking is left up to the user, although a suggested syntax for R/C/F is printed at the end.
 #
 # Usage: 
 #     1: Use 'rake' to invoke default task. (Simple build.)
@@ -20,6 +21,8 @@
 #     1: ruby/mkmf.rb (Thanks Ruby team.)
 #     2: http://www.ruby-forum.com/topic/78239#126917 [Ruby2C2Fortran Pattern] (Thanks to Ron M.)
 #     3: http://www.ats.ucla.edu/clusters/common/computing/c-fortran-interop.html [C/Fortran Interoperation]
+#     
+#     Written for/in tandem with: http://ckcarroll.herokuapp.com/log/ruby/ruby2c2fortran
 #
 # Released under WTFPL in July 2012, http://sam.zoy.org/wtfpl/
 
@@ -58,18 +61,12 @@ task :rebuild do
   Rake::Task["build"].invoke
 end
 
-# Compile Fortran files; Checks current directory for Fortran extensions and feeds them to
-# whatever compiler is detected between GNU and Intel compilers.
 task :compile_fortran do
-  Fortran_Flags = '-c'
+  Fortran_Flags = '-c -fPIC'
   Fortran_Compiler = `which gfortran`.chomp
   unless $? == 0 # $? contains output from system call. (`which gfortran`)
-    "Couldn't find gfortran... Trying IFort."
-    Fortran_Compiler = `which ifort`.chomp
-    unless $? == 0
-      "Couldn't find Intel Fortran either. Skipping Fortran compile."
-      next # Skips to next task
-    end
+    "Couldn't find Fortran compiler (Checks for GFortran)"
+
   end
 
   unless Fortran_Compiler.empty?
@@ -89,19 +86,14 @@ task :compile_fortran do
   puts "Didn't find any Fortran files to compile." if Fortran_Files.empty?
 end
 
-# Compile C files: Checks pwd and feeds to gcc or icc.
 task :compile_c do
   cflags = CONFIG['cflags']
+  # Edit the line below to reflect your own system.
   iflags = "-I. -I/usr/local/include/ruby-1.9.1/x86_64-linux -I/usr/local/include/ruby-1.9.1/ruby/backward " \
   "-I/usr/local/include/ruby-1.9.1 -I. -fPIC -O3"
   C_Compiler = `which gcc`.chomp
   unless $? == 0 
-    "Couldn't find gcc... Trying ICC."
-    C_Compiler = `which icc`.chomp
-    unless $? == 0
-      "Couldn't find Intel CC either. Skipping C compile."
-      next # Skips to next task
-    end
+    "Couldn't find C compiler (Checks for GCC)"
   end
 
   unless C_Compiler.empty?
@@ -136,6 +128,9 @@ task :clean do
   remove_files(out_files)
 end
 
+
+### Helper Methods: ###
+
 def remove_files(file_list)
   file_list.each do |file|
     `rm -rf #{file}`
@@ -146,7 +141,6 @@ def remove_files(file_list)
     end
   end
 end
-### Helper Methods: ###
 
 # Used to determine whether the compilation output is already in pwd.
 def compile_output_exists?(file)
