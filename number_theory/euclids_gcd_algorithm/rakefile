@@ -1,0 +1,79 @@
+# File: Rakefile
+# Programmer: Cameron Carroll
+# Date of Creation: July 15, 2012
+# Purpose: Fortran script to build and clean files.
+#
+# Reminder: You have to rewrite the linking task for each individual project, which is why it's not in
+# rebuild by default.
+
+# Global Data:
+SCRIPT_VERSION = "0.1"
+FORTRAN_COMPILER = `which gfortran`.chomp
+FORTRAN_FLAGS = '-c -fPIC'
+
+# Invoke with 'rake clean'
+require 'rake/clean'
+CLEAN.include("*.o", "*.so", "*.O", "*.SO", "*.out", "*.OUT")
+
+task :default => :rebuild
+
+task :rebuild do
+  puts ""
+  print_header
+  puts ""
+  puts "Cleaning..."
+  puts "----------------------------------------"
+  Rake::Task["clean"].invoke
+  puts ""
+  puts "Rebuilding..."
+  puts "----------------------------------------"
+  Rake::Task["build"].invoke
+end
+
+task :link do
+  puts "Linking..."
+  OUTPUT_FILENAME = 'euclids_gcd_test.o'
+  `#{FORTRAN_COMPILER} -o #{OUTPUT_FILENAME} test_euclids_gcd.f08 euclids_gcd.o`
+  check_and_report_output(OUTPUT_FILENAME)
+end
+
+task :build do
+  Fortran_Files = Dir['*.{f08,F08,f03,F03}']
+  Fortran_Files.each do |file|
+    output = file[0..-5] + '.o'
+    if compile_output_exists?(output)
+      puts "Output file: #{output} already exists; Consider using 'rake rebuild'."
+      next
+    end
+    puts "Compiling Fortran file: #{file}"
+    `#{FORTRAN_COMPILER} #{FORTRAN_FLAGS} #{file}` #System call to compiler
+    check_and_report_output(output)
+  end
+  puts ""
+  puts "Finished build!"
+  puts ""
+end
+
+def print_header()
+  puts "Build Script Version #{SCRIPT_VERSION}"
+  puts "----------------------------------------"
+end
+
+# Used to determine whether the compilation output is already in pwd.
+def compile_output_exists?(file)
+  if Dir["#{file}"].empty?
+    return false
+  else
+    return true
+  end
+end
+
+# DRYer method of printing success/failure messages.
+def check_and_report_output(file)
+  if compile_output_exists?(file)
+    puts "Successfully compiled #{file}."
+  else
+    puts "Failed to compiled #{file}."
+  end
+  puts ""
+end
