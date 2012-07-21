@@ -8,7 +8,7 @@ def eratosthenes(n)
   nums.find_all {|m| m.nonzero?}
 end
  
-eratosthenes(1000000)
+p eratosthenes(1000000)
 
 # 0.1566 second average run time (10,000 iterations) (I/O included)
 # 1.7979 second average run time (1,000,000 iterations) (I/O included)
